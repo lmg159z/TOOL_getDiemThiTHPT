@@ -2,8 +2,8 @@
 
 ```
 +---------------------------+
-| Lê Minh Ghi                                      |
-| github.com/lmg159z                               |
+| Lê Minh Ghi               |
+| github.com/lmg159z        |
 +---------------------------+```
 
 ```markdown

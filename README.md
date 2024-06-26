@@ -21,7 +21,7 @@
 ## Cài đặt
 
 1. **Cài đặt các thư viện:**
-   ```bash
+   ```
    pip install requests bs4 tabulate unidecode
    ```
 

@@ -24,7 +24,6 @@
    ```bash
    pip install requests bs4 tabulate unidecode
    ```
-```
 
 ## Cách sử dụng
 

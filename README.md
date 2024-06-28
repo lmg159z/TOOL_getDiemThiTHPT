@@ -81,6 +81,9 @@
 - `index.py` - Script Python.
 - `Information.py` - File chứa thông tin về mã hội đồng và tên hội đồng thi (ví dụ).
 
+## Update
+
+- Checking internet 
 ## Liên hệ
 
 Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với tôi.

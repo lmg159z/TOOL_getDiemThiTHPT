@@ -7,7 +7,7 @@ nameFile  = {
   "02": "Sở GD&ĐT TP. Hồ Chí Minh",
   "03": "Sở GD&ĐT Hải Phòng",
   "04": "Sở GD&ĐT Đà Nẵng",
-  "Q5": "Sở GD&ĐT Hà Giang",
+  "05": "Sở GD&ĐT Hà Giang",
   "06": "Sở GD&ĐT Cao Bằng",
   "07": "Sở GD&ĐT Lai Châu",
   "08": "Sở GD&ĐT Lào Cai",

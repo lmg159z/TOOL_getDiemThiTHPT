@@ -1,156 +1,196 @@
-import requests
-import os
-import Information
+import requests,os, Information
 from bs4 import BeautifulSoup
 from tabulate import tabulate
 from unidecode import unidecode
-import socket
-import time
 
-# Xử lý html sang array
-def extract_data_from_html(html):
-    soup = BeautifulSoup(html, 'html.parser')
-    table_rows = soup.find_all('tr')
-    result_obj = {
-        "Toán": "-",
-        "Văn": "-",
-        "Sử": "-",
-        "Địa": "-",
-        "Ngoại ngữ": "-",
-        "GDCD": "-",
-        "Lí": "-",
-        "Hóa": "-",
-        "Sinh": "-"
-    }
-    for row in table_rows:
-        columns = row.find_all('td')
-        if len(columns) == 2:
-            subject = columns[0].text.strip()
-            value = columns[1].text.strip()
-            result_obj[subject] = value
-    return ", ".join(list(result_obj.values()))
-
-url = "https://vietnamnet.vn/giao-duc/diem-thi/tra-cuu-diem-thi-tot-nghiep-thpt"
-
-# Hàm kiểm tra kết nối internet
-def check_internet(host="8.8.8.8", port=53, timeout=3):
-    try:
-        socket.setdefaulttimeout(timeout)
-        socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
-        return True
-    except socket.error as ex:
-        return False
-
-# Lấy HTML
-check = 0
-tong = 0
-def get_html(mhd, year, start):
-    global check, tong
-    try:
-        response = requests.get(url + "/" + year + "/" + mhd + start + ".html")
-        if response.status_code == 200:
-            html_content = response.text
-            start_marker = "<div class=\"resultSearch__right\">"
-            end_marker = "<div class=\"lg:hidden flex justify-center\"> <!-- BEGIN COMPONENT:: COMPONENT000055 -->"
-            extracted_data = html_content.split(start_marker)[1].split(end_marker)[0]
-            listVakue = extract_data_from_html(extracted_data)
-            return [True, listVakue, [mhd + start, Information.nameFile[mhd]]]
-            check = 0
-            tong += 1
-        else:
-            check += 1
-            print("\033[1;31m Không thể lấy dữ liệu từ trang web.")
-            return [False, "", []]
-    except requests.exceptions.RequestException as e:
-        print("\033[1;31m Không thể kết nối tới trang web.")
-        return [False, "", []]
-
-# Ghi vào file
-def write_to_file(data, nameFile):
-    os.makedirs("diem_cac_so", exist_ok=True)
-    with open(nameFile + ".csv", "a") as f:
-        f.write(data + "\n")
-
-def convert_to_filename(text):
-    no_diacritics = unidecode(text)
-    filename = no_diacritics.replace(" ", "_")
-    return filename
 
 def render(value, headers):
-    table = tabulate(value, headers=headers, tablefmt="grid", colalign=("left", "right"))
-    print(table)
-
+  os.system("clear")
+  table = tabulate(value, headers=headers, tablefmt="grid", colalign=("left", "right"))
+  print(table)
+  
 def renderInfo():
-    os.system("clear")
-    print("\033[1;33m")
-    render(Information.convert_format(), ["Mã Hội Đồng", "Tên Hội Đồng Thi", "Mã Hội Đồng", "Tên Hội Đồng Thi"])
-    print("\033[0m")
+  os.system("clear")
+  print("\033[1;33m")
+  render(Information.dict_to_list(),["Mã Hội Đồng", "Tên Hội Đồng Thi"])
+  print("\033[0m")
+  
 
-# Chạy chương trình
-def run(start, mhdStart, year):
-    global check, tong
-    start = start
-    while check <= 10:
-        if not check_internet():
-            print("Không có kết nối internet. Đang chờ kết nối lại...")
-            while not check_internet():
-                time.sleep(5)
 
-        tong += 1
-        print(tong)
-        go = f"{start:06d}"
-        value = get_html(mhdStart, year, go)
-        
-        if value[0]:
-            os.system("clear")
-            luuTam = value[2] + value[1].split(",")
-            render([
-                [" \033[1;34m Số Báo Danh", luuTam[0]],
-                ["Sở Giáo Dục Đào Tạo", luuTam[1]],
-                ["Toán", luuTam[2]],
-                ["Ngữ Văn", luuTam[3]],
-                ["Lịch Sử", luuTam[4]],
-                ["Địa Lí", luuTam[5]],
-                ["Ngoại Ngữ", luuTam[6]],
-                ["Giáo Dục Công Dân", luuTam[7]],
-                ["Vật Lý", luuTam[8]],
-                ["Hoá Học", luuTam[9]],
-                ["Sinh Học", luuTam[10]]
-            ], "")
-            
-            nameFile = convert_to_filename(Information.nameFile[mhdStart])
-            write_to_file(mhdStart + go + ", " + value[1], "./diem_cac_so/" + nameFile)
-            start += 1
-    Information.thong_ke.append([Information.nameFile[str(mhdStart)], tong - 11])
-    tong = 0
-    check = 0
 
+check = 0
+def extract_td_values(url):
+    try:
+        global check
+        # Gửi yêu cầu GET đến trang web
+        response = requests.get(url)
+
+        # Kiểm tra nếu yêu cầu thành công
+        if response.status_code == 200:
+            # Lấy nội dung HTML của trang web
+            html_content = response.text
+
+            # Sử dụng BeautifulSoup để phân tích cú pháp HTML
+            soup = BeautifulSoup(html_content, 'html.parser')
+
+            # Tìm phần tử <tbody> trong mã HTML
+            tbody = soup.find('tbody')
+
+            # Kiểm tra xem có tồn tại <tbody> không
+            if tbody:
+                # Lấy tất cả các phần tử <td> trong <tbody>
+                td_elements = tbody.find_all('td')
+
+                # Kiểm tra xem có ít nhất một phần tử <td> có giá trị không
+                if any(td.text.strip() for td in td_elements):
+                    # Tạo mảng để lưu trữ giá trị từ các thẻ <td>
+                    values = []
+
+                    # Lặp qua từng phần tử <td>
+                    for td in td_elements:
+                        # Lấy nội dung trong thẻ <td>, nếu không có thì thêm '-'
+                        value = td.text.strip() if td.text.strip() else '-'
+                        values.append(value)
+                    check = 0
+                    return values
+                else:
+                    #print("Không có giá trị trong các thẻ <td> của <tbody>.")
+                    check += 1
+                    return None
+
+            else:
+                print("Không tìm thấy phần tử <tbody> trên trang web.")
+                check += 1
+                return None
+
+        else:
+            print(f"Lỗi khi tải trang web. Mã trạng thái: {response.status_code}")
+            check +=1
+            return None
+
+    except Exception as e:
+        print(f"Lỗi: {str(e)}")
+        check +=1
+        return None
+
+def run(MaHoiDong):
+  global check
+  so_luong = 0
+  stt = 1
+  while check < 10:
+    if len(str(stt)) == 1:
+      go = "000" + str(stt) 
+    if len(str(stt)) == 2:
+      go = "00" + str(stt) 
+    if len(str(stt)) == 3:
+      go = "0" + str(stt) 
+    if len(str(stt)) == 4:
+      go = str(stt)
+      
+      #---------
+    url = Information.url + MaHoiDong + go
+    result = extract_td_values(url)
+    if result:
+      so_luong +=  1
+      result.insert(0,MaHoiDong)
+      result.insert(1,Information.nameSchools[MaHoiDong])
+      #print(result)
+      print("\033[1;32m")
+      render( [
+          [" Mã Hội Đồng", result[0]],
+          ["Tên Hội Đồng", result[1]],
+          ["Số Báo Danh", result[2]],
+          ["Họ Và Tên", result[3]],
+          ["Ngày Sinh", result[4]],
+          ["Nơi Sinh", result[5]],
+          ["Tên Trường", result[6]],
+          ["Điểm Ưu Tiên", result[7]],
+          ["Ngữ Văn", result[8]],
+          ["Tiếng Anh", result[9]],
+          ["Toán", result[10]],
+          ["Điểm Chuyên", result[11]] 
+          ],"")
+      print(" \033[0m")
+      nameFile = convert_to_filename(Information.nameSchools[MaHoiDong])
+      writeToFile(nameFile, ", ".join(result))
+   #############        
+    stt +=1  
+  if MaHoiDong in Information.nameSchools:
+     Information.thong_ke.append([Information.nameSchools[MaHoiDong],so_luong])
+  check = 0
+  
+  
+      
+#run("0101")
+
+
+def writeToFile(nameFile,data):
+  os.makedirs("diem_don_vi", exist_ok=True)
+  with open("./diem_don_vi/" + nameFile+".csv", "a") as f:
+    f.write(data + "\n")
+  with open("Toan_Bo_Diem.csv", "a") as f:
+    f.write(data + "\n")
+
+def convert_to_filename(text):
+    # Loại bỏ các ký tự có dấu
+    no_diacritics = unidecode(text)
+    # Thay thế khoảng trắng bằng gạch dưới
+    filename = no_diacritics.replace(" ", "_")
+    return filename
+    
+# Giả sử Information.nameSchools là dictionary chứa các đơn vị và mã của chúng
 renderInfo()
-year = input("\033[1;36m Vui long nhap nam muon lay ==> ")
-renderInfo()
-mhd = input("\033[1;36m Vui long nhap ma hoi dong thi \nNhap 0 de lay tay ca \n ==> ")
-renderInfo()
-if int(mhd) > 0 and int(mhd) < 65:
-    run(1, mhd, year)
-else:
+option = input("Nhập 'y' để lấy từng đơn vị hoặc 'n' để lấy hết: ")
+
+if option.lower() == 'y':
     renderInfo()
-    checkGet = input("\033[1;36m Nhap y de lay theo khoang ( 01 - 09) \nNhap n de lay het tat ca \n ==> ")
-    renderInfo()
-    if checkGet == "y":
-        mStart = int(input("\033[1;36m Nhap ma bat dau: => "))
-        mEnd = int(input("\033[1;36m Nhap ma ket thuc: => "))
-        if mStart < mEnd and mStart > 0 and mEnd <= 64:
-            while mStart <= mEnd:
-                if len(str(mStart)) == 1:
-                    ma = "0" + str(mStart)
-                run(1, ma, year)
-                mStart += 1
+    ma_don_vi = input("Nhập mã đơn vị: ")
+    if ma_don_vi in Information.nameSchools:
+        print("Bắt đầu chạy...")
+        run(ma_don_vi)
     else:
-        Start = 1
-        while Start <= 64:
-            if len(str(Start)) == 1:
-                ma = "0" + str(Start)
-            run(1, ma, year)
-            Start += 1
+        print("Mã đơn vị không hợp lệ. Kết thúc chương trình.")
+elif option.lower() == 'n':
+    option_n = input("Nhập 'y' để lấy theo khoảng hoặc 'n' để lấy toàn bộ: ")
+    if option_n.lower() == 'y':
+        renderInfo()
+        ma_bat_dau = input("Nhập mã bắt đầu: ")
+        ma_ket_thuc = input("Nhập mã kết thúc: ")
+        if ma_bat_dau in Information.nameSchools and ma_ket_thuc in Information.nameSchools and ma_ket_thuc > ma_bat_dau:
+            start = ma_bat_dau 
+            while start <= ma_ket_thuc:
+              run(start)
+              start = "{:04d}".format(int(start) + 1)
+              
+        else:
+            print("Mã bắt đầu hoặc mã kết thúc không hợp lệ. Kết thúc chương trình.")
+    elif option_n.lower() == 'n':
+        print("Bắt đầu chạy...")
+        start = "0101"
+        while start <= "3000":
+          run(start)
+          start = "{:04d}".format(int(start) + 1)
+ 
+    else:
+        print("Lựa chọn không hợp lệ. Kết thúc chương trình.")
+else:
+    print("Lựa chọn không hợp lệ. Kết thúc chương trình.")
 
-render(Information.thong_ke, ["\033[7m Sở GDDT", "Số Lượng Sỉ Tủ"])
+
+os.system("clear")
+print("Sau đây là bản thống kê:")
+
+
+with open("Thong_ke.csv", "a") as f:
+  for value in Information.thong_ke:
+    d = value[0] +", " + str(value[1])
+    f.write(d + "\n")
+
+
+
+
+render(
+  Information.thong_ke,
+  ["Tên Đơn Vị","Số Lượng Thí Sinh"] )
+  
+  
